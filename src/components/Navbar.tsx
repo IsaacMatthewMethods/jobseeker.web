@@ -80,6 +80,22 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
               </button>
 
               <button
+                id="nav-admin"
+                onClick={() => handleNavClick('admin')}
+                className={`py-1 transition-colors cursor-pointer flex items-center space-x-1.5 ${
+                  currentTab === 'admin'
+                    ? 'text-white border-b-2 border-sky-500 font-semibold'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                <span>Admin Command Center</span>
+                <span className="px-1.5 py-0.2 text-[9px] font-black uppercase rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                  Pulse
+                </span>
+              </button>
+
+              <button
                 id="nav-applications"
                 onClick={() => handleNavClick('applications')}
                 className={`py-1 transition-colors cursor-pointer flex items-center space-x-1.5 ${
@@ -105,7 +121,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                <span>Saved Jobs</span>
+                <span>Saved</span>
                 {savedJobIds.length > 0 && (
                   <span className="px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-slate-800 text-slate-300">
                     {savedJobIds.length}
@@ -122,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                Post a Job
+                Post Vacancy
               </button>
 
               <button
@@ -205,6 +221,13 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
                       </div>
 
                       <div className="py-1">
+                        <button
+                          onClick={() => handleNavClick('admin')}
+                          className="w-full text-left px-4 py-2 text-xs text-sky-300 hover:bg-slate-800 flex items-center space-x-2 font-bold"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                          <span>Admin Command Center</span>
+                        </button>
                         <button
                           onClick={() => handleNavClick('profile')}
                           className="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center space-x-2"
@@ -306,6 +329,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
             >
               <Search className="w-4 h-4" />
               <span>Explore Jobs</span>
+            </button>
+
+            <button
+              onClick={() => handleNavClick('admin')}
+              className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between ${
+                currentTab === 'admin' ? 'bg-slate-800 text-sky-400 font-bold' : 'text-slate-300'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <ShieldCheck className="w-4 h-4 text-sky-400" />
+                <span>Admin Command Center</span>
+              </div>
+              <span className="px-2 py-0.5 text-[10px] font-black uppercase rounded bg-sky-500/20 text-sky-400">
+                Pulse
+              </span>
             </button>
 
             <button

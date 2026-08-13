@@ -12,6 +12,7 @@ import { ApplicationsTab } from './components/ApplicationsTab';
 import { SavedJobsTab } from './components/SavedJobsTab';
 import { PostJobTab } from './components/PostJobTab';
 import { ProfileView } from './components/ProfileView';
+import { AdminPortalTab } from './components/AdminPortalTab';
 import { JobDetailsModal } from './components/JobDetailsModal';
 import { ApplicationModal } from './components/ApplicationModal';
 import { AuthModal } from './components/AuthModal';
@@ -82,6 +83,14 @@ const MainContent: React.FC = () => {
           />
         )}
 
+        {currentTab === 'admin' && (
+          <AdminPortalTab
+            onPostJobClick={() => setCurrentTab('post-job')}
+            showToast={showToast}
+            onOpenAuthModal={() => openAuth('login')}
+          />
+        )}
+
         {currentTab === 'applications' && (
           <ApplicationsTab
             onExploreClick={() => setCurrentTab('explore')}
@@ -124,6 +133,9 @@ const MainContent: React.FC = () => {
         <div className="flex items-center gap-6 uppercase font-bold tracking-wider text-[10px] text-slate-500">
           <button onClick={() => setCurrentTab('explore')} className="hover:text-sky-600 transition-colors">
             Jobs
+          </button>
+          <button onClick={() => setCurrentTab('admin')} className="hover:text-sky-600 transition-colors">
+            Admin Pulse
           </button>
           <button onClick={() => setCurrentTab('applications')} className="hover:text-sky-600 transition-colors">
             Applications

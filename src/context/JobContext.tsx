@@ -2,12 +2,13 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { 
   Job, 
   JobApplication, 
+  UserAccount,
   FilterState, 
   JobCategory, 
   JobType, 
   ApplicationStatus 
 } from '../types';
-import { SHEMALABS_INITIAL_JOBS, INITIAL_APPLICATIONS } from '../data/initialJobs';
+import { SHEMALABS_INITIAL_JOBS, INITIAL_APPLICATIONS, ADMIN_EMPLOYER, PRELOADED_USER } from '../data/initialJobs';
 import { useAuth } from './AuthContext';
 import { normalizeArray } from '../utils/formatters';
 import { 
@@ -24,6 +25,9 @@ import {
 interface JobContextType {
   jobs: Job[];
   applications: JobApplication[];
+  users: UserAccount[];
+  employers: UserAccount[];
+  candidates: UserAccount[];
   savedJobIds: string[];
   filters: FilterState;
   selectedJobForDetails: Job | null;
@@ -32,8 +36,10 @@ interface JobContextType {
   featuredJobs: Job[];
   isDbConnected: boolean;
   stats: {
+    totalUsers: number;
     totalJobs: number;
     remoteJobs: number;
+    verifiedEmployers: number;
     totalApplications: number;
     underReviewCount: number;
     interviewsCount: number;
@@ -51,8 +57,13 @@ interface JobContextType {
   isJobSaved: (jobId: string) => boolean;
   hasAppliedToJob: (jobId: string) => boolean;
   postNewJob: (jobData: Partial<Job>) => Promise<Job>;
+  deleteJob: (jobId: string) => Promise<void>;
+  toggleFeaturedJob: (jobId: string, featuredState?: boolean) => Promise<void>;
   updateApplicationStatus: (applicationId: string, newStatus: ApplicationStatus, notes?: string) => Promise<void>;
   withdrawApplication: (applicationId: string) => Promise<void>;
+  verifyEmployer: (userId: string, isVerified?: boolean) => Promise<void>;
+  suspendEmployer: (userId: string, isSuspended?: boolean) => Promise<void>;
+  deleteEmployer: (userId: string) => Promise<void>;
   reseedDatabase: () => Promise<void>;
 }
 
@@ -69,6 +80,78 @@ const defaultFilters: FilterState = {
 
 const SAVED_JOBS_KEY = 'jobseeker_pro_saved_jobs_v2';
 
+const INITIAL_USERS: UserAccount[] = [
+  {
+    ...ADMIN_EMPLOYER,
+    companyIndustry: "Engineering & Cloud Infrastructure",
+    isVerifiedEmployer: true
+  },
+  {
+    id: "usr_partner_fintech",
+    uid: "usr_partner_fintech",
+    name: "Apex Fintech Group",
+    email: "careers@apexfintech.io",
+    phone: "+1 (415) 890-1200",
+    userType: "EMPLOYER",
+    role: "EMPLOYER",
+    companyName: "Apex Fintech",
+    companyIndustry: "Financial Technology & Web3",
+    location: "New York, NY",
+    isVerifiedEmployer: true,
+    qualification: "Enterprise Talent Partner",
+    skills: ["Quantitative Systems", "High Frequency Trading", "Distributed Architecture"],
+    experienceYears: 8
+  },
+  {
+    id: "usr_partner_cloudscale",
+    uid: "usr_partner_cloudscale",
+    name: "CloudScale Systems",
+    email: "talent@cloudscale.net",
+    phone: "+1 (512) 400-3322",
+    userType: "EMPLOYER",
+    role: "EMPLOYER",
+    companyName: "CloudScale",
+    companyIndustry: "Cloud DevOps & Platform Engineering",
+    location: "Austin, TX",
+    isVerifiedEmployer: false,
+    qualification: "Infrastructure Recruitment",
+    skills: ["Kubernetes", "Multi-Cloud", "Observability"],
+    experienceYears: 6
+  },
+  {
+    ...PRELOADED_USER,
+    companyIndustry: undefined
+  },
+  {
+    id: "usr_candidate_sarah",
+    uid: "usr_candidate_sarah",
+    name: "Sarah Chen",
+    email: "sarah.chen@devmail.io",
+    phone: "+1 (650) 902-1144",
+    userType: "JOB_SEEKER",
+    role: "JOB_SEEKER",
+    location: "San Francisco, CA",
+    qualification: "M.Sc. Human-Computer Interaction",
+    skills: ["Figma", "Design Systems", "Prototyping", "Tailwind CSS", "User Research"],
+    experienceYears: 4,
+    resumeText: "Senior UI/UX Product Designer with a track record of crafting cohesive design systems for high-traffic mobile and web applications."
+  },
+  {
+    id: "usr_candidate_marcus",
+    uid: "usr_candidate_marcus",
+    name: "Marcus Vance",
+    email: "marcus.vance@cloudeng.tech",
+    phone: "+1 (206) 774-8890",
+    userType: "JOB_SEEKER",
+    role: "JOB_SEEKER",
+    location: "Seattle, WA",
+    qualification: "B.Sc. Cloud Architecture",
+    skills: ["Docker", "Kubernetes", "GCP", "Terraform", "CI/CD", "TypeScript"],
+    experienceYears: 6,
+    resumeText: "DevOps & Cloud Automation Engineer specialized in zero-downtime microservices orchestration and automated GitOps pipelines."
+  }
+];
+
 const JobContext = createContext<JobContextType | undefined>(undefined);
 
 export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -76,6 +159,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [jobs, setJobs] = useState<Job[]>(SHEMALABS_INITIAL_JOBS);
   const [applications, setApplications] = useState<JobApplication[]>(INITIAL_APPLICATIONS);
+  const [users, setUsers] = useState<UserAccount[]>(INITIAL_USERS);
   const [isDbConnected, setIsDbConnected] = useState<boolean>(true);
 
   const [savedJobIds, setSavedJobIds] = useState<string[]>(() => {
@@ -103,6 +187,9 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       for (const app of INITIAL_APPLICATIONS) {
         await setDoc(doc(db, 'applications', app.id), app, { merge: true });
       }
+      for (const usr of INITIAL_USERS) {
+        await setDoc(doc(db, 'users', usr.id), usr, { merge: true });
+      }
     } catch (e) {
       console.warn('Reseeding note:', e);
     }
@@ -119,7 +206,6 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (snapshot.empty) {
           console.info('Firestore jobs collection is empty. Auto-seeding ShemaLabs jobs...');
-          // Seed the 5 initial ShemaLabs jobs directly to Firestore
           try {
             for (const initialJob of SHEMALABS_INITIAL_JOBS) {
               await setDoc(doc(db, 'jobs', initialJob.id), initialJob);
@@ -139,10 +225,10 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               companyLogo: data.companyLogo || (data.company || 'SL').slice(0, 2).toUpperCase(),
               companyColor: data.companyColor || 'from-blue-600 to-indigo-700',
               location: data.location || 'Remote',
-              salaryRange: data.salaryRange || data.salary || '$120,000 - $150,000 / yr',
+              salaryRange: data.salaryRange || data.salary || '$120k - $150k / yr',
               salary: data.salary || data.salaryRange || '$120,000 - $150,000 / yr',
               jobType: data.jobType || data.type || 'REMOTE',
-              type: (data.type || data.jobType || 'Remote') as JobType,
+              type: (data.type || data.jobType || 'Remote') as any,
               category: (data.category || 'Software Engineering') as JobCategory,
               description: data.description || '',
               requirements: normalizeArray(data.requirements),
@@ -244,6 +330,66 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
 
+  // 3. Live Query (onSnapshot) for Users
+  useEffect(() => {
+    let isSubscribed = true;
+
+    try {
+      const usersColRef = collection(db, 'users');
+      const unsubscribe = onSnapshot(usersColRef, async (snapshot) => {
+        if (!isSubscribed) return;
+
+        if (snapshot.empty) {
+          // Seed initial users into Firestore
+          try {
+            for (const initUser of INITIAL_USERS) {
+              await setDoc(doc(db, 'users', initUser.id), initUser, { merge: true });
+            }
+          } catch (seedErr) {
+            console.warn('Initial users seed note:', seedErr);
+          }
+          setUsers(INITIAL_USERS);
+        } else {
+          const fetchedUsers: UserAccount[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const userObj: UserAccount = {
+              id: docSnap.id,
+              uid: docSnap.id,
+              name: data.name || 'User',
+              email: data.email || '',
+              phone: data.phone || '+1 (555) 000-0000',
+              userType: data.userType || data.role || 'JOB_SEEKER',
+              role: data.userType || data.role || 'JOB_SEEKER',
+              location: data.location || 'Remote',
+              qualification: data.qualification || 'Professional',
+              skills: normalizeArray(data.skills),
+              experienceYears: data.experienceYears || 3,
+              resumeText: data.resumeText || '',
+              companyName: data.companyName,
+              companyIndustry: data.companyIndustry,
+              isVerifiedEmployer: data.isVerifiedEmployer ?? false,
+              isSuspended: data.isSuspended ?? false,
+              updatedAt: data.updatedAt
+            };
+            fetchedUsers.push(userObj);
+          });
+
+          setUsers(fetchedUsers);
+        }
+      }, (err) => {
+        console.warn('Users collection listener note:', err);
+      });
+
+      return () => {
+        isSubscribed = false;
+        unsubscribe();
+      };
+    } catch (e) {
+      console.warn('Users listener setup note:', e);
+    }
+  }, []);
+
   // Sync saved jobs to localStorage
   useEffect(() => {
     localStorage.setItem(SAVED_JOBS_KEY, JSON.stringify(savedJobIds));
@@ -309,7 +455,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       companyName: job.company,
       company: job.company,
       location: job.location,
-      salary: job.salaryRange || job.salary || '$120,000 - $150,000 / yr',
+      salary: job.salaryRange || job.salary || '$120k - $150k / yr',
       type: job.type || 'Remote',
       applicantUserId: user.id || user.uid || 'usr_candidate',
       applicantId: user.id || user.uid || 'usr_candidate',
@@ -327,7 +473,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Optimistic local state update
     setApplications(prev => [newApp, ...prev.filter(a => a.id !== newAppId)]);
 
-    // Direct Firestore Write: setDoc(doc(db, "applications", newAppId), newApp)
+    // Direct Firestore Write
     try {
       await setDoc(doc(db, 'applications', newAppId), newApp);
       
@@ -355,10 +501,10 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       companyLogo: (jobData.company || user?.companyName || 'SL').slice(0, 2).toUpperCase(),
       companyColor: jobData.companyColor || 'from-blue-600 to-indigo-700',
       location: jobData.location || 'Remote / San Francisco, CA',
-      salaryRange: jobData.salaryRange || jobData.salary || '$130,000 - $160,000 / yr',
-      salary: jobData.salaryRange || jobData.salary || '$130,000 - $160,000 / yr',
+      salaryRange: jobData.salaryRange || jobData.salary || '$130k - $165k / yr',
+      salary: jobData.salaryRange || jobData.salary || '$130,000 - $165,000 / yr',
       jobType: jobData.jobType || (jobData.isRemote ? 'REMOTE' : 'FULL_TIME'),
-      type: jobData.type || (jobData.isRemote ? 'Remote' : 'Full-Time'),
+      type: (jobData.type || (jobData.isRemote ? 'Remote' : 'Full-Time')) as any,
       category: jobData.category || 'Software Engineering',
       description: jobData.description || 'Join our team to build transformative cloud and mobile products.',
       requirements: jobData.requirements || 'Strong experience in modern software engineering frameworks.',
@@ -377,7 +523,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Optimistic local state update
     setJobs(prev => [newJob, ...prev]);
 
-    // Direct Firestore Write: setDoc(doc(db, "jobs", newJobId), newJob)
+    // Direct Firestore Write
     try {
       await setDoc(doc(db, 'jobs', newJobId), newJob);
     } catch (err) {
@@ -385,6 +531,35 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     return newJob;
+  };
+
+  // Delete Job from Firestore
+  const deleteJob = async (jobId: string) => {
+    setJobs(prev => prev.filter(j => j.id !== jobId));
+    try {
+      await deleteDoc(doc(db, 'jobs', jobId));
+    } catch (e) {
+      console.warn('Delete job error in Firestore:', e);
+    }
+  };
+
+  // Toggle Featured status on a Job in Firestore
+  const toggleFeaturedJob = async (jobId: string, explicitState?: boolean) => {
+    const target = jobs.find(j => j.id === jobId);
+    if (!target) return;
+    const newState = explicitState !== undefined ? explicitState : !(target.isFeatured || target.featured);
+
+    setJobs(prev => prev.map(j => j.id === jobId ? { ...j, isFeatured: newState, featured: newState } : j));
+
+    try {
+      await updateDoc(doc(db, 'jobs', jobId), {
+        isFeatured: newState,
+        featured: newState,
+        updatedAt: Date.now()
+      });
+    } catch (e) {
+      console.warn('Toggle featured job note:', e);
+    }
   };
 
   // Updating application status in Firestore
@@ -413,7 +588,8 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       await updateDoc(doc(db, 'applications', applicationId), {
         status: newStatus,
-        statusNotes: finalNotes
+        statusNotes: finalNotes,
+        updatedAt: Date.now()
       });
     } catch (err) {
       console.warn('Firestore application status update note:', err);
@@ -430,6 +606,51 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.warn('Firestore delete application note:', err);
     }
   };
+
+  // Verify Employer Partner in Firestore
+  const verifyEmployer = async (userId: string, isVerified: boolean = true) => {
+    setUsers(prev => prev.map(u => (u.id === userId || u.uid === userId) ? { ...u, isVerifiedEmployer: isVerified } : u));
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        isVerifiedEmployer: isVerified,
+        updatedAt: Date.now()
+      });
+    } catch (e) {
+      console.warn('Verify employer note:', e);
+    }
+  };
+
+  // Suspend Employer Partner in Firestore
+  const suspendEmployer = async (userId: string, isSuspended: boolean = true) => {
+    setUsers(prev => prev.map(u => (u.id === userId || u.uid === userId) ? { ...u, isSuspended } : u));
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        isSuspended,
+        updatedAt: Date.now()
+      });
+    } catch (e) {
+      console.warn('Suspend employer note:', e);
+    }
+  };
+
+  // Delete Employer User from Firestore
+  const deleteEmployer = async (userId: string) => {
+    setUsers(prev => prev.filter(u => u.id !== userId && u.uid !== userId));
+    try {
+      await deleteDoc(doc(db, 'users', userId));
+    } catch (e) {
+      console.warn('Delete user note:', e);
+    }
+  };
+
+  // Filtered Employers and Candidates
+  const employers = useMemo(() => {
+    return users.filter(u => u.userType === 'EMPLOYER' || u.role === 'EMPLOYER');
+  }, [users]);
+
+  const candidates = useMemo(() => {
+    return users.filter(u => u.userType === 'JOB_SEEKER' || u.role === 'JOB_SEEKER');
+  }, [users]);
 
   // Filtered and Sorted Jobs
   const filteredJobs = useMemo(() => {
@@ -503,6 +724,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const stats = useMemo(() => {
     const totalJobs = jobs.length;
     const remoteJobs = jobs.filter(j => j.isRemote || j.jobType === 'REMOTE' || j.type === 'Remote').length;
+    const verifiedEmployers = employers.filter(e => e.isVerifiedEmployer).length;
     
     const userApps = user 
       ? applications.filter(a => 
@@ -513,20 +735,25 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       : applications;
     
     return {
+      totalUsers: users.length,
       totalJobs,
       remoteJobs,
-      totalApplications: userApps.length,
+      verifiedEmployers,
+      totalApplications: applications.length,
       underReviewCount: userApps.filter(a => a.status === 'UNDER_REVIEW').length,
       interviewsCount: userApps.filter(a => a.status === 'INTERVIEW_SCHEDULED').length,
       acceptedCount: userApps.filter(a => a.status === 'ACCEPTED').length
     };
-  }, [jobs, applications, user]);
+  }, [jobs, applications, users, employers, user]);
 
   return (
     <JobContext.Provider
       value={{
         jobs,
         applications,
+        users,
+        employers,
+        candidates,
         savedJobIds,
         filters,
         selectedJobForDetails,
@@ -547,8 +774,13 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isJobSaved,
         hasAppliedToJob,
         postNewJob,
+        deleteJob,
+        toggleFeaturedJob,
         updateApplicationStatus,
         withdrawApplication,
+        verifyEmployer,
+        suspendEmployer,
+        deleteEmployer,
         reseedDatabase
       }}
     >
