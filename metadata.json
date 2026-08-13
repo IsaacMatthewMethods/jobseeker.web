@@ -1,0 +1,6 @@
+{
+  "name": "JobSeeker Pro",
+  "description": "Full-stack web companion for JobSeeker with live job search, filtering, application tracker, recruiter posting portal, and Firebase authentication.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
