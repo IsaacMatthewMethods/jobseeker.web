@@ -344,34 +344,15 @@ export const AdminPortalTab: React.FC<AdminPortalTabProps> = ({
           </p>
 
           <div className="space-y-3">
-            <button
-              onClick={async () => {
-                await loginAsAdmin();
-                showToast('Welcome back, ShemaLabs Administrator!');
-              }}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>One-Click Sign In as ShemaLabs Admin</span>
-            </button>
-
             {onOpenAuthModal && (
               <button
                 onClick={onOpenAuthModal}
-                className="w-full py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm transition-all border border-slate-700 flex items-center justify-center space-x-2 cursor-pointer"
+                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-sm shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
               >
-                <Key className="w-4 h-4 text-slate-400" />
-                <span>Custom Email / Password Login</span>
+                <Key className="w-4 h-4" />
+                <span>Sign In with Administrator Account</span>
               </button>
             )}
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-slate-800/80 text-left bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-              Admin Credentials:
-            </span>
-            <div className="font-mono text-xs text-sky-300">Email: admin@shemalabs.com</div>
-            <div className="font-mono text-xs text-slate-400">Password: 0616 / usr_shemalabs_admin</div>
           </div>
         </div>
       </div>

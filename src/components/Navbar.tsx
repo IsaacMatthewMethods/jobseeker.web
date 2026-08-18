@@ -15,10 +15,14 @@ import {
   ChevronDown,
   Building2,
   CheckCircle2,
-  Crown
+  Crown,
+  Download,
+  Smartphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
+import { usePWAInstall } from '../hooks/usePWAInstall';
+import { PWAInstallModal } from './PWAInstallModal';
 import { Role } from '../types';
 
 interface NavbarProps {
@@ -30,8 +34,25 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openAuthModal }) => {
   const { user, isAuthenticated, logout, switchRole } = useAuth();
   const { savedJobIds, stats } = useJobs();
+  const { canInstall, isInstalled, isIOS, hasNativePrompt, promptInstall } = usePWAInstall();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [showInstallGuideModal, setShowInstallGuideModal] = useState(false);
+
+  const isAuthorizedAdmin = Boolean(
+    user && (user.isAdmin || user.email?.toLowerCase() === 'admin@shemalabs.com')
+  );
+
+  const handleInstallApp = async () => {
+    if (isIOS || !hasNativePrompt) {
+      setShowInstallGuideModal(true);
+      return;
+    }
+    const res = await promptInstall();
+    if (res === 'unsupported') {
+      setShowInstallGuideModal(true);
+    }
+  };
 
   const getInitials = (name: string) => {
     if (!name) return 'JS';
@@ -80,21 +101,23 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
                 Explore Jobs
               </button>
 
-              <button
-                id="nav-admin"
-                onClick={() => handleNavClick('admin')}
-                className={`py-1 transition-colors cursor-pointer flex items-center space-x-1.5 ${
-                  currentTab === 'admin'
-                    ? 'text-white border-b-2 border-sky-500 font-semibold'
-                    : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-                <span>Admin Command Center</span>
-                <span className="px-1.5 py-0.2 text-[9px] font-black uppercase rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">
-                  Pulse
-                </span>
-              </button>
+              {isAuthorizedAdmin && (
+                <button
+                  id="nav-admin"
+                  onClick={() => handleNavClick('admin')}
+                  className={`py-1 transition-colors cursor-pointer flex items-center space-x-1.5 ${
+                    currentTab === 'admin'
+                      ? 'text-white border-b-2 border-sky-500 font-semibold'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Admin Command Center</span>
+                  <span className="px-1.5 py-0.2 text-[9px] font-black uppercase rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                    Pulse
+                  </span>
+                </button>
+              )}
 
               <button
                 id="nav-applications"
@@ -157,7 +180,19 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
           </div>
 
           {/* Right Action & User Controls */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
+            {canInstall && !isInstalled && (
+              <button
+                id="navbar-install-app-btn"
+                onClick={handleInstallApp}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-500/10 text-sky-300 hover:bg-sky-500/20 border border-sky-500/30 transition-all cursor-pointer shadow-sm"
+                title="Install App to your device"
+              >
+                <Download className="w-3.5 h-3.5 text-sky-400" />
+                <span>Install App</span>
+              </button>
+            )}
+
             {isAuthenticated && user ? (
               <div className="flex items-center space-x-3">
                 <div className="text-right cursor-pointer" onClick={() => handleNavClick('profile')}>
@@ -232,13 +267,27 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
                       </div>
 
                       <div className="py-1">
-                        <button
-                          onClick={() => handleNavClick('admin')}
-                          className="w-full text-left px-4 py-2 text-xs text-sky-300 hover:bg-slate-800 flex items-center space-x-2 font-bold"
-                        >
-                          <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-                          <span>Admin Command Center</span>
-                        </button>
+                        {canInstall && !isInstalled && (
+                          <button
+                            onClick={() => {
+                              setUserDropdownOpen(false);
+                              handleInstallApp();
+                            }}
+                            className="w-full text-left px-4 py-2 text-xs text-sky-300 hover:bg-slate-800 flex items-center space-x-2 font-medium"
+                          >
+                            <Download className="w-3.5 h-3.5 text-sky-400" />
+                            <span>Install App on Device</span>
+                          </button>
+                        )}
+                        {isAuthorizedAdmin && (
+                          <button
+                            onClick={() => handleNavClick('admin')}
+                            className="w-full text-left px-4 py-2 text-xs text-sky-300 hover:bg-slate-800 flex items-center space-x-2 font-bold"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                            <span>Admin Command Center</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => handleNavClick('profile')}
                           className="w-full text-left px-4 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center space-x-2"
@@ -331,6 +380,30 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-slate-900/98 border-b border-slate-800 px-4 pt-2 pb-6 space-y-2 shadow-2xl">
+          {canInstall && !isInstalled && (
+            <div className="p-3 mb-2 rounded-xl bg-gradient-to-r from-sky-950/80 to-slate-900 border border-sky-500/40 flex items-center justify-between shadow-lg">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-lg bg-sky-500 p-1 flex items-center justify-center shrink-0 shadow">
+                  <img src="/icon.svg" alt="App Icon" className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white truncate">JobSeeker Pro App</p>
+                  <p className="text-[10px] text-sky-300 truncate">1-tap launch & live alerts</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleInstallApp();
+                }}
+                className="py-1.5 px-3 rounded-lg bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs flex items-center space-x-1 shadow-sm shrink-0 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Install</span>
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col space-y-1">
             <button
               onClick={() => handleNavClick('explore')}
@@ -342,20 +415,22 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
               <span>Explore Jobs</span>
             </button>
 
-            <button
-              onClick={() => handleNavClick('admin')}
-              className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between ${
-                currentTab === 'admin' ? 'bg-slate-800 text-sky-400 font-bold' : 'text-slate-300'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <ShieldCheck className="w-4 h-4 text-sky-400" />
-                <span>Admin Command Center</span>
-              </div>
-              <span className="px-2 py-0.5 text-[10px] font-black uppercase rounded bg-sky-500/20 text-sky-400">
-                Pulse
-              </span>
-            </button>
+            {isAuthorizedAdmin && (
+              <button
+                onClick={() => handleNavClick('admin')}
+                className={`w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium flex items-center justify-between ${
+                  currentTab === 'admin' ? 'bg-slate-800 text-sky-400 font-bold' : 'text-slate-300'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <ShieldCheck className="w-4 h-4 text-sky-400" />
+                  <span>Admin Command Center</span>
+                </div>
+                <span className="px-2 py-0.5 text-[10px] font-black uppercase rounded bg-sky-500/20 text-sky-400">
+                  Pulse
+                </span>
+              </button>
+            )}
 
             <button
               onClick={() => handleNavClick('applications')}
@@ -480,6 +555,13 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
           </div>
         </div>
       )}
+
+      {/* Manual & iOS PWA Install Guide Modal */}
+      <PWAInstallModal
+        isOpen={showInstallGuideModal}
+        onClose={() => setShowInstallGuideModal(false)}
+        isIOS={isIOS}
+      />
     </header>
   );
 };

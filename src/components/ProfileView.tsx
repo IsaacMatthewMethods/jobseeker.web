@@ -28,9 +28,10 @@ import { normalizeArray } from '../utils/formatters';
 interface ProfileViewProps {
   onLogoutSuccess: () => void;
   showToast: (msg: string) => void;
+  onOpenAuthModal?: () => void;
 }
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ onLogoutSuccess, showToast }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ onLogoutSuccess, showToast, onOpenAuthModal }) => {
   const { user, updateUserProfile, switchRole, logout } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -48,12 +49,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogoutSuccess, showT
 
   if (!user) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4 text-slate-400">
+      <div className="max-w-md mx-auto px-4 py-20 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mx-auto mb-4 border border-sky-100 shadow-sm">
           <UserIcon className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold text-slate-800">No Active Session</h2>
-        <p className="text-sm text-slate-500 mt-1 mb-6">Sign in or tap the demo user button to view and manage your profile.</p>
+        <h2 className="text-2xl font-bold text-slate-900">Sign in to Access Your Profile</h2>
+        <p className="text-sm text-slate-500 mt-2 mb-6 leading-relaxed">
+          Create or manage your professional resume, track your submitted applications, and showcase your skills to top employers.
+        </p>
+        {onOpenAuthModal && (
+          <button
+            onClick={onOpenAuthModal}
+            className="w-full py-3 px-6 rounded-xl bg-slate-900 hover:bg-sky-600 text-white font-bold text-sm shadow-md transition-all cursor-pointer"
+          >
+            Sign In / Register
+          </button>
+        )}
       </div>
     );
   }

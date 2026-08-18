@@ -17,6 +17,7 @@ import { JobDetailsModal } from './components/JobDetailsModal';
 import { ApplicationModal } from './components/ApplicationModal';
 import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { Job } from './types';
 import { 
   Briefcase, 
@@ -117,6 +118,7 @@ const MainContent: React.FC = () => {
           <ProfileView
             onLogoutSuccess={() => setCurrentTab('explore')}
             showToast={showToast}
+            onOpenAuthModal={() => openAuth('login')}
           />
         )}
       </main>
@@ -125,7 +127,7 @@ const MainContent: React.FC = () => {
       <footer className="bg-white border-t border-slate-200 px-6 sm:px-8 py-4 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-3">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span className="font-semibold text-slate-700">JobSeeker Pro Active</span>
+          <span className="font-semibold text-slate-700">JobSeeker Pro</span>
           <span className="text-slate-300">•</span>
           <span>Verified Auth & Firestore Persistence</span>
         </div>
@@ -134,9 +136,11 @@ const MainContent: React.FC = () => {
           <button onClick={() => setCurrentTab('explore')} className="hover:text-sky-600 transition-colors">
             Jobs
           </button>
-          <button onClick={() => setCurrentTab('admin')} className="hover:text-sky-600 transition-colors">
-            Admin Pulse
-          </button>
+          {user && (user.isAdmin || user.email?.toLowerCase() === 'admin@shemalabs.com') && (
+            <button onClick={() => setCurrentTab('admin')} className="hover:text-sky-600 transition-colors">
+              Admin Pulse
+            </button>
+          )}
           <button onClick={() => setCurrentTab('applications')} className="hover:text-sky-600 transition-colors">
             Applications
           </button>
@@ -185,6 +189,9 @@ const MainContent: React.FC = () => {
         message={toastMessage}
         onClose={() => setToastMessage(null)}
       />
+
+      {/* PWA Mobile & Desktop Install Floating Banner */}
+      <PWAInstallBanner />
     </div>
   );
 };

@@ -135,12 +135,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     onClose();
   };
 
-  const fillAdminCredentials = () => {
-    setLoginEmail('admin@shemalabs.com');
-    setLoginPass('0616');
-    setError(null);
-  };
-
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
       <div 
@@ -227,7 +221,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="email"
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="Enter your email (e.g. admin@shemalabs.com)"
+                    placeholder="Enter your email address"
                     required
                     className="w-full pl-10 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
                   />
@@ -257,18 +251,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     {showLoginPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-              </div>
-
-              {/* Quick Admin fill button */}
-              <div className="flex items-center justify-between text-[11px] pt-0.5">
-                <button
-                  type="button"
-                  onClick={fillAdminCredentials}
-                  className="text-sky-600 hover:text-sky-700 font-semibold flex items-center space-x-1 cursor-pointer"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>Admin Employer: admin@shemalabs.com (0616)</span>
-                </button>
               </div>
 
               <button

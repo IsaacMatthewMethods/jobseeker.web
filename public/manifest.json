@@ -1,0 +1,58 @@
+{
+  "name": "JobSeeker Pro — Career Marketplace",
+  "short_name": "JobSeeker",
+  "description": "Find top jobs, manage candidate applications, and connect with verified tech companies in real-time.",
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0284c7",
+  "categories": ["business", "productivity", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 256x256 384x384 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Explore Tech Jobs",
+      "short_name": "Explore",
+      "description": "Search and filter open tech opportunities",
+      "url": "/?tab=explore",
+      "icons": [{ "src": "/icon.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "My Applications",
+      "short_name": "Applications",
+      "description": "Track active job applications and review statuses",
+      "url": "/?tab=applications",
+      "icons": [{ "src": "/icon.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Post a Job",
+      "short_name": "Post Job",
+      "description": "Publish a new vacancy for candidates",
+      "url": "/?tab=post-job",
+      "icons": [{ "src": "/icon.svg", "sizes": "96x96", "type": "image/svg+xml" }]
+    }
+  ]
+}

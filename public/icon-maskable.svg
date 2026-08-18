@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="50%" stop-color="#0369a1" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Maskable full background -->
+  <rect width="512" height="512" fill="url(#grad1)" />
+
+  <!-- Inner safe zone content (within 80% center) -->
+  <g filter="url(#shadow)" transform="translate(136, 136) scale(0.8)">
+    <rect x="20" y="80" width="260" height="180" rx="28" fill="#ffffff" />
+    <path d="M 20 140 L 150 190 L 280 140 L 280 232 C 280 247.46 267.46 260 252 260 L 48 260 C 32.54 260 20 247.46 20 232 Z" fill="#f1f5f9" />
+    <path d="M 100 80 L 100 50 C 100 36.75 110.75 26 124 26 L 176 26 C 189.25 26 200 36.75 200 50 L 200 80" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" />
+    <rect x="130" y="130" width="40" height="34" rx="8" fill="#0284c7" />
+    <circle cx="240" cy="65" r="28" fill="#38bdf8" />
+    <path d="M 240 45 L 244 59 L 258 65 L 244 71 L 240 85 L 236 71 L 222 65 L 236 59 Z" fill="#ffffff" />
+  </g>
+</svg>

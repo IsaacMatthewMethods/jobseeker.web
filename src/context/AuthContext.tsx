@@ -69,6 +69,8 @@ export function formatFirebaseAuthError(error: any): string {
       return 'Authentication popup was closed before completing sign-in.';
     case 'auth/cancelled-popup-request':
       return 'Only one popup request allowed at a time.';
+    case 'auth/unauthorized-domain':
+      return 'Domain not authorized in Firebase. Please add "jobseeker.ai.studio" to Firebase Console > Authentication > Settings > Authorized domains.';
     default:
       return error.message ? error.message.replace(/^Firebase:\s*/, '') : 'Authentication failed. Please check your input.';
   }
@@ -79,12 +81,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem(LOCAL_USER_KEY);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Ensure legacy hardcoded preloaded user does not persist across new browser sessions
+        if (parsed && parsed.email !== 'methodstechnology1@gmail.com') {
+          return parsed;
+        }
+        localStorage.removeItem(LOCAL_USER_KEY);
+        return null;
       } catch {
-        return PRELOADED_USER;
+        return null;
       }
     }
-    return PRELOADED_USER;
+    return null;
   });
   
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -237,14 +245,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: true };
     } catch (firebaseErr: any) {
       console.warn("Firebase Auth sign-in returned error:", firebaseErr);
-
-      // Check if credentials match local cache or preloaded user
-      if (cleanEmail === PRELOADED_USER.email.toLowerCase()) {
-        setUser(PRELOADED_USER);
-        localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(PRELOADED_USER));
-        setIsLoading(false);
-        return { success: true };
-      }
 
       const registeredRaw = localStorage.getItem(REGISTERED_USERS_KEY);
       if (registeredRaw) {
