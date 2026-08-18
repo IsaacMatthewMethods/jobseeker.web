@@ -39,6 +39,10 @@ export interface UserAccount {
   companyIndustry?: string;
   isVerifiedEmployer?: boolean;
   isSuspended?: boolean;
+  isAdmin?: boolean;
+  adminRole?: string;
+  adminGrantedBy?: string;
+  adminGrantedAt?: number;
   avatarUrl?: string;
   portfolioUrl?: string;
   githubUrl?: string;

@@ -116,7 +116,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               id: fbUser.uid,
               uid: fbUser.uid,
               userType: data.userType || data.role || 'JOB_SEEKER',
-              role: data.userType || data.role || 'JOB_SEEKER'
+              role: data.userType || data.role || 'JOB_SEEKER',
+              isAdmin: data.isAdmin ?? (cleanEmail === 'admin@shemalabs.com'),
+              adminRole: data.adminRole || ((data.isAdmin || cleanEmail === 'admin@shemalabs.com') ? 'Administrator' : undefined)
             };
             setUser(fullProfile);
             localStorage.setItem(LOCAL_USER_KEY, JSON.stringify(fullProfile));

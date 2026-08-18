@@ -28,6 +28,7 @@ interface JobContextType {
   users: UserAccount[];
   employers: UserAccount[];
   candidates: UserAccount[];
+  admins: UserAccount[];
   savedJobIds: string[];
   filters: FilterState;
   selectedJobForDetails: Job | null;
@@ -37,6 +38,7 @@ interface JobContextType {
   isDbConnected: boolean;
   stats: {
     totalUsers: number;
+    totalAdmins: number;
     totalJobs: number;
     remoteJobs: number;
     verifiedEmployers: number;
@@ -64,6 +66,7 @@ interface JobContextType {
   verifyEmployer: (userId: string, isVerified?: boolean) => Promise<void>;
   suspendEmployer: (userId: string, isSuspended?: boolean) => Promise<void>;
   deleteEmployer: (userId: string) => Promise<void>;
+  toggleAdminRole: (userId: string, makeAdmin?: boolean, adminRole?: string) => Promise<void>;
   reseedDatabase: () => Promise<void>;
 }
 
@@ -370,6 +373,10 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               companyIndustry: data.companyIndustry,
               isVerifiedEmployer: data.isVerifiedEmployer ?? false,
               isSuspended: data.isSuspended ?? false,
+              isAdmin: data.isAdmin ?? (data.email?.toLowerCase() === 'admin@shemalabs.com'),
+              adminRole: data.adminRole || ((data.isAdmin || data.email?.toLowerCase() === 'admin@shemalabs.com') ? 'Administrator' : undefined),
+              adminGrantedBy: data.adminGrantedBy,
+              adminGrantedAt: data.adminGrantedAt,
               updatedAt: data.updatedAt
             };
             fetchedUsers.push(userObj);
@@ -643,13 +650,50 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Filtered Employers and Candidates
+  // Toggle Admin Role for any user (Candidate or Employer) in Firestore
+  const toggleAdminRole = async (userId: string, makeAdmin?: boolean, adminRole: string = 'Administrator') => {
+    const target = users.find(u => u.id === userId || u.uid === userId);
+    const newState = makeAdmin !== undefined ? makeAdmin : !target?.isAdmin;
+    const actor = user?.name || user?.email || 'ShemaLabs Super Admin';
+
+    setUsers(prev => prev.map(u => {
+      if (u.id === userId || u.uid === userId) {
+        return {
+          ...u,
+          isAdmin: newState,
+          adminRole: newState ? adminRole : undefined,
+          adminGrantedBy: newState ? actor : undefined,
+          adminGrantedAt: newState ? Date.now() : undefined,
+          updatedAt: Date.now()
+        };
+      }
+      return u;
+    }));
+
+    try {
+      await updateDoc(doc(db, 'users', userId), {
+        isAdmin: newState,
+        adminRole: newState ? adminRole : null,
+        adminGrantedBy: newState ? actor : null,
+        adminGrantedAt: newState ? Date.now() : null,
+        updatedAt: Date.now()
+      });
+    } catch (e) {
+      console.warn('Toggle admin role in Firestore note:', e);
+    }
+  };
+
+  // Filtered Employers, Candidates and Admins
   const employers = useMemo(() => {
     return users.filter(u => u.userType === 'EMPLOYER' || u.role === 'EMPLOYER');
   }, [users]);
 
   const candidates = useMemo(() => {
     return users.filter(u => u.userType === 'JOB_SEEKER' || u.role === 'JOB_SEEKER');
+  }, [users]);
+
+  const admins = useMemo(() => {
+    return users.filter(u => u.isAdmin || u.email?.toLowerCase() === 'admin@shemalabs.com');
   }, [users]);
 
   // Filtered and Sorted Jobs
@@ -736,6 +780,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     return {
       totalUsers: users.length,
+      totalAdmins: admins.length,
       totalJobs,
       remoteJobs,
       verifiedEmployers,
@@ -744,7 +789,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       interviewsCount: userApps.filter(a => a.status === 'INTERVIEW_SCHEDULED').length,
       acceptedCount: userApps.filter(a => a.status === 'ACCEPTED').length
     };
-  }, [jobs, applications, users, employers, user]);
+  }, [jobs, applications, users, employers, admins, user]);
 
   return (
     <JobContext.Provider
@@ -754,6 +799,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         users,
         employers,
         candidates,
+        admins,
         savedJobIds,
         filters,
         selectedJobForDetails,
@@ -781,6 +827,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         verifyEmployer,
         suspendEmployer,
         deleteEmployer,
+        toggleAdminRole,
         reseedDatabase
       }}
     >

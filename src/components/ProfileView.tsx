@@ -18,7 +18,8 @@ import {
   Download,
   UploadCloud,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  Crown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types';
@@ -115,12 +116,18 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onLogoutSuccess, showT
             </div>
 
             <div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">{user.name}</h1>
                 <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-sky-500/20 text-sky-300 border border-sky-500/30">
                   <ShieldCheck className="w-3 h-3 mr-1" />
                   Verified
                 </span>
+                {(user.isAdmin || user.email?.toLowerCase() === 'admin@shemalabs.com') && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-black uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm">
+                    <Crown className="w-3 h-3 mr-1 text-amber-400 fill-amber-400" />
+                    {user.adminRole || 'Administrator'}
+                  </span>
+                )}
               </div>
               
               <p className="text-xs text-slate-300 mt-0.5">{user.email}</p>

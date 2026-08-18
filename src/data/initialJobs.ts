@@ -13,6 +13,8 @@ export const ADMIN_EMPLOYER: UserProfile = {
   qualification: "Executive Leadership & Talent Acquisition",
   skills: ["Engineering Leadership", "Technical Recruiting", "Product Architecture"],
   experienceYears: 10,
+  isAdmin: true,
+  adminRole: "Super Administrator",
   resumeText: "Engineering Director & Talent Acquisition Lead at ShemaLabs. Sourcing world-class software engineering and design talent."
 };
 

@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   ChevronDown,
   Building2,
-  CheckCircle2
+  CheckCircle2,
+  Crown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
@@ -183,13 +184,23 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, openA
                     >
                       <div className="px-4 py-3">
                         <p className="text-xs text-slate-400">Signed in as</p>
-                        <p className="text-sm font-bold text-white truncate">{user.name}</p>
+                        <div className="flex items-center space-x-1.5">
+                          <p className="text-sm font-bold text-white truncate">{user.name}</p>
+                          {(user.isAdmin || user.email?.toLowerCase() === 'admin@shemalabs.com') && (
+                            <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" title="Platform Administrator" />
+                          )}
+                        </div>
                         <p className="text-xs text-slate-400 truncate">{user.email}</p>
-                        <div className="mt-2 flex items-center space-x-1.5">
+                        <div className="mt-2 flex flex-wrap gap-1.5">
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-500/20 text-sky-300 border border-sky-500/30">
                             <ShieldCheck className="w-3 h-3 mr-1" />
                             {user.userType === 'EMPLOYER' || user.role === 'EMPLOYER' ? 'Employer Account' : 'Job Seeker Account'}
                           </span>
+                          {(user.isAdmin || user.email?.toLowerCase() === 'admin@shemalabs.com') && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              👑 {user.adminRole || 'Administrator'}
+                            </span>
+                          )}
                         </div>
                       </div>
 
